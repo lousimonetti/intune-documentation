@@ -5,7 +5,9 @@ from .registry import render_reports
 from .schema import (
     AssetDetail,
     AssignmentCoverage,
+    DEFAULT_REPORT_SCOPE,
     ReportMetadata,
+    ReportScope,
     ReportSchema,
     ReportSection,
     RenderedReport,
@@ -16,8 +18,10 @@ from .templates import TemplateSet, get_template_set
 __all__ = [
     "AssetDetail",
     "AssignmentCoverage",
+    "DEFAULT_REPORT_SCOPE",
     "ReportMetadata",
     "ReportOptions",
+    "ReportScope",
     "ReportSchema",
     "ReportSection",
     "RenderedReport",
