@@ -1,0 +1,40 @@
+{
+  "id": "nmt-001",
+  "displayName": "Company Portal Compliance",
+  "type": "notificationMessageTemplates",
+  "settings": {
+    "localizedMessages": [
+      {
+        "locale": "en-US",
+        "subject": "Device Compliance Reminder",
+        "message": "Please update your device compliance status."
+      }
+    ]
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-018",
+        "groupDisplayName": "Compliance Notifications",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2025-02-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "notificationMessageTemplate",
+    "graphCollectionPath": "/deviceManagement/notificationMessageTemplates"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.notificationMessageTemplate"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "dss-001",
+  "displayName": "macOS Disk Cleanup",
+  "type": "deviceShellScripts",
+  "settings": {
+    "scriptLanguage": "bash",
+    "runAsAccount": "system"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-008",
+        "groupDisplayName": "macOS Devices",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "hideAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-08-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceShellScript",
+    "graphCollectionPath": "/deviceManagement/deviceShellScripts"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.deviceShellScript"
+  }
+}

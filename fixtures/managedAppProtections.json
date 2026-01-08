@@ -1,0 +1,36 @@
+{
+  "id": "map-001",
+  "displayName": "iOS App Protection",
+  "type": "managedAppProtections",
+  "settings": {
+    "platform": "ios",
+    "dataBackupBlocked": true,
+    "pinRequired": true
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-011",
+        "groupDisplayName": "iOS Users",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-10-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "managedAppProtection",
+    "graphCollectionPath": "/deviceAppManagement/managedAppPolicies"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.iosManagedAppProtection"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "dhs-001",
+  "displayName": "Remediate Time Sync",
+  "type": "deviceHealthScripts",
+  "settings": {
+    "detectionScript": "Get-Service w32time",
+    "remediationScript": "Start-Service w32time",
+    "runAsAccount": "system"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-006",
+        "groupDisplayName": "Remediation Pilot",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "hideAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-06-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceHealthScript",
+    "graphCollectionPath": "/deviceManagement/deviceHealthScripts"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.deviceHealthScript"
+  }
+}

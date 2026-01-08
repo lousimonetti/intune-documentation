@@ -1,0 +1,35 @@
+{
+  "id": "tac-001",
+  "displayName": "Standard Terms of Use",
+  "type": "termsAndConditions",
+  "settings": {
+    "title": "Contoso Terms",
+    "version": 2
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-019",
+        "groupDisplayName": "All Employees",
+        "groupType": "microsoft365",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2025-02-15T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "termsAndConditions",
+    "graphCollectionPath": "/deviceManagement/termsAndConditions"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.termsAndConditions"
+  }
+}

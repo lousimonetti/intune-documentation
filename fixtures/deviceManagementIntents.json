@@ -1,0 +1,35 @@
+{
+  "id": "intent-001",
+  "displayName": "Security Baseline - Windows",
+  "type": "deviceManagementIntents",
+  "settings": {
+    "templateId": "securityBaselineWindows",
+    "settingCount": 35
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-005",
+        "groupDisplayName": "All Windows 11",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-05-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceManagementIntent",
+    "graphCollectionPath": "/deviceManagement/intents"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.deviceManagementIntent"
+  }
+}

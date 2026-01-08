@@ -1,0 +1,35 @@
+{
+  "id": "wfup-001",
+  "displayName": "Windows 11 23H2 Rollout",
+  "type": "windowsFeatureUpdateProfiles",
+  "settings": {
+    "featureUpdateVersion": "Windows 11, version 23H2",
+    "rolloutPriority": "medium"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-015",
+        "groupDisplayName": "Feature Update Pilot",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-12-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "windowsFeatureUpdateProfile",
+    "graphCollectionPath": "/deviceManagement/windowsFeatureUpdateProfiles"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.windowsFeatureUpdateProfile"
+  }
+}

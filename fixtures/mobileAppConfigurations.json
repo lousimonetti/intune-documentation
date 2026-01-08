@@ -1,0 +1,37 @@
+{
+  "id": "appconfig-001",
+  "displayName": "Outlook Configuration",
+  "type": "mobileAppConfigurations",
+  "settings": {
+    "targetedApps": ["outlook"],
+    "configuration": {
+      "emailDomain": "contoso.com"
+    }
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-010",
+        "groupDisplayName": "Mobile Users",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-09-15T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "mobileAppConfiguration",
+    "graphCollectionPath": "/deviceAppManagement/mobileAppConfigurations"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.managedAppConfiguration"
+  }
+}

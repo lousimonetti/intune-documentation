@@ -1,0 +1,36 @@
+{
+  "id": "ap-001",
+  "displayName": "Autopilot Hybrid Join",
+  "type": "windowsAutopilotDeploymentProfiles",
+  "settings": {
+    "deploymentMode": "userDriven",
+    "joinType": "hybridAzureAdJoin",
+    "hideEULA": true
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-013",
+        "groupDisplayName": "Autopilot Devices",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-11-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "windowsAutopilotDeploymentProfile",
+    "graphCollectionPath": "/deviceManagement/windowsAutopilotDeploymentProfiles"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.azureADWindowsAutopilotDeploymentProfile"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "tmac-001",
+  "displayName": "OneDrive Targeted Config",
+  "type": "targetedManagedAppConfigurations",
+  "settings": {
+    "targetedApps": ["onedrive"],
+    "configuration": {
+      "syncOnMeteredConnection": false
+    }
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-012",
+        "groupDisplayName": "OneDrive Users",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-10-15T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "targetedManagedAppConfiguration",
+    "graphCollectionPath": "/deviceAppManagement/targetedManagedAppConfigurations"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.targetedManagedAppConfiguration"
+  }
+}

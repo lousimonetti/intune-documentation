@@ -1,0 +1,36 @@
+{
+  "id": "cp-001",
+  "displayName": "Windows Compliance",
+  "type": "deviceCompliancePolicies",
+  "settings": {
+    "platform": "windows10",
+    "passwordRequired": true,
+    "osMinimumVersion": "10.0.22621.0"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-002",
+        "groupDisplayName": "Corporate Devices",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-02-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceCompliancePolicy",
+    "graphCollectionPath": "/deviceManagement/deviceCompliancePolicies"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.windows10CompliancePolicy"
+  }
+}

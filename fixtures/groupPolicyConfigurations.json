@@ -1,0 +1,35 @@
+{
+  "id": "gpc-001",
+  "displayName": "ADMX - Edge Baseline",
+  "type": "groupPolicyConfigurations",
+  "settings": {
+    "enabled": true,
+    "policyCount": 12
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-004",
+        "groupDisplayName": "Edge Managed Devices",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-04-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "groupPolicyConfiguration",
+    "graphCollectionPath": "/deviceManagement/groupPolicyConfigurations"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.groupPolicyConfiguration"
+  }
+}
