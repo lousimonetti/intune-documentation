@@ -59,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Audience template to use for report output.",
     )
     parser.add_argument(
-        "--report-scope",
+        "--scope",
         dest="scope",
         choices=SUPPORTED_SCOPES,
         default=DEFAULT_REPORT_SCOPE,

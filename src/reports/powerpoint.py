@@ -5,7 +5,7 @@ from .schema import DEFAULT_REPORT_SCOPE, ReportSchema, RenderedReport, ReportSc
 from .templates import TemplateSet
 
 
-FORMAT_NAME = "powerpoint"
+FORMAT_NAME = "ppt"
 
 
 def render(
