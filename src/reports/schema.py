@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
+
+
+ReportScope = Literal["full_settings", "assignment_summary"]
+DEFAULT_REPORT_SCOPE: ReportScope = "full_settings"
 
 
 @dataclass(frozen=True)
@@ -25,6 +29,7 @@ class AssetDetail:
     asset_type: str
     settings: Dict[str, Any] = field(default_factory=dict)
     assignments: List[Dict[str, Any]] = field(default_factory=list)
+    assignment_mappings: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
