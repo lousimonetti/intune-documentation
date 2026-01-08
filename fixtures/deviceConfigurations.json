@@ -1,0 +1,40 @@
+{
+  "id": "dc-001",
+  "displayName": "Baseline Wi-Fi",
+  "type": "deviceConfigurations",
+  "settings": {
+    "platform": "windows10",
+    "wifiProfiles": [
+      {
+        "ssid": "ContosoSecure",
+        "authentication": "wpa2Enterprise"
+      }
+    ]
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-001",
+        "groupDisplayName": "All Windows Devices",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-01-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceConfiguration",
+    "graphCollectionPath": "/deviceManagement/deviceConfigurations"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.windows10GeneralConfiguration"
+  }
+}

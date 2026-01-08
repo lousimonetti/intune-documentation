@@ -1,0 +1,36 @@
+{
+  "id": "app-001",
+  "displayName": "Microsoft Teams",
+  "type": "mobileApps",
+  "settings": {
+    "publisher": "Microsoft",
+    "platform": "windows10",
+    "appType": "win32LobApp"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-009",
+        "groupDisplayName": "All Staff",
+        "groupType": "microsoft365",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-09-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "mobileApp",
+    "graphCollectionPath": "/deviceAppManagement/mobileApps"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.win32LobApp"
+  }
+}

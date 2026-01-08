@@ -1,0 +1,35 @@
+{
+  "id": "wqup-001",
+  "displayName": "Quality Updates - Monthly",
+  "type": "windowsQualityUpdateProfiles",
+  "settings": {
+    "deadlineInDays": 7,
+    "gracePeriodInDays": 2
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-016",
+        "groupDisplayName": "All Windows Devices",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2025-01-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "windowsQualityUpdateProfile",
+    "graphCollectionPath": "/deviceManagement/windowsQualityUpdateProfiles"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.windowsQualityUpdateProfile"
+  }
+}

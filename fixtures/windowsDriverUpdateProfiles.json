@@ -1,0 +1,35 @@
+{
+  "id": "wdup-001",
+  "displayName": "Driver Updates - Standard",
+  "type": "windowsDriverUpdateProfiles",
+  "settings": {
+    "approvalType": "automatic",
+    "deferUpdateInDays": 7
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-017",
+        "groupDisplayName": "Drivers Pilot",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2025-01-15T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "windowsDriverUpdateProfile",
+    "graphCollectionPath": "/deviceManagement/windowsDriverUpdateProfiles"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.windowsDriverUpdateProfile"
+  }
+}

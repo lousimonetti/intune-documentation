@@ -1,0 +1,35 @@
+{
+  "id": "af-001",
+  "displayName": "Windows 11 Only",
+  "type": "assignmentFilters",
+  "settings": {
+    "platform": "windows10AndLater",
+    "rule": "(device.deviceOSType -eq \"Windows\") and (device.osVersion -ge \"10.0.22000\")"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-020",
+        "groupDisplayName": "Device Filters",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2025-03-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "assignmentFilter",
+    "graphCollectionPath": "/deviceManagement/assignmentFilters"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.assignmentFilter"
+  }
+}

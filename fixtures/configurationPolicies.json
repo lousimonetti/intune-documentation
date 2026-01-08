@@ -1,0 +1,40 @@
+{
+  "id": "sc-001",
+  "displayName": "Settings Catalog - BitLocker",
+  "type": "configurationPolicies",
+  "settings": {
+    "templateId": "bitlocker",
+    "settings": [
+      {
+        "settingDefinitionId": "device_vendor_msft_bitlocker_requireDeviceEncryption",
+        "value": true
+      }
+    ]
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-003",
+        "groupDisplayName": "Windows 11 Pilot",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "showAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-03-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceManagementConfigurationPolicy",
+    "graphCollectionPath": "/deviceManagement/configurationPolicies"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.deviceManagementConfigurationPolicy"
+  }
+}

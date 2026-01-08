@@ -1,0 +1,35 @@
+{
+  "id": "dms-001",
+  "displayName": "Install Contoso Cert",
+  "type": "deviceManagementScripts",
+  "settings": {
+    "scriptLanguage": "powershell",
+    "runAsAccount": "system"
+  },
+  "assignments": [
+    {
+      "target": {
+        "groupId": "group-007",
+        "groupDisplayName": "Windows - Finance",
+        "groupType": "security",
+        "assignmentType": "include"
+      },
+      "intent": "required",
+      "delivery": {
+        "notification": "hideAll",
+        "restartSettings": "default"
+      },
+      "schedule": {
+        "startDateTime": "2024-07-01T00:00:00Z",
+        "endDateTime": null
+      }
+    }
+  ],
+  "sourceResource": {
+    "graphResourceName": "deviceManagementScript",
+    "graphCollectionPath": "/deviceManagement/deviceManagementScripts"
+  },
+  "raw": {
+    "@odata.type": "#microsoft.graph.deviceManagementScript"
+  }
+}
