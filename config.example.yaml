@@ -1,0 +1,18 @@
+# Example configuration for Intune documentation exports.
+# Copy this file to config.yaml and fill in your tenant/app details.
+
+tenant_id: "00000000-0000-0000-0000-000000000000"
+client_id: "11111111-1111-1111-1111-111111111111"
+client_secret: "REPLACE_WITH_CLIENT_SECRET"
+# If you prefer device code auth, leave client_secret blank and set use_device_code to true.
+use_device_code: false
+
+output_directory: "./output"
+
+report_options:
+  template_set: "admin" # admin | client
+  include_sections:
+    - summary
+    - assets
+    - assignment_coverage
+  include_raw_exports: false
