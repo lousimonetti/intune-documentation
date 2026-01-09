@@ -18,6 +18,7 @@ def _distill_assignment_mappings(assignments: List[Dict[str, Any]]) -> List[Dict
                 "groupId": target.get("groupId"),
                 "groupDisplayName": target.get("groupDisplayName"),
                 "groupType": target.get("groupType"),
+                "groupDynamicRule": target.get("groupDynamicRule"),
                 "assignmentType": target.get("assignmentType"),
                 "intent": assignment.get("intent"),
                 "delivery": assignment.get("delivery"),
