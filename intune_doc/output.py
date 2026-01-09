@@ -12,7 +12,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from pptx import Presentation
-from pptx.chart.data import CategoryChartData
+from pptx.chart.data import BubbleChartData, CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.util import Inches
 
@@ -600,6 +600,7 @@ def _write_pptx_report(report: RenderedReport, output_path: Path) -> None:
     assignment_payload = _extract_assignment_coverage_payload(report)
     group_summary = _summarize_groups(assets_payload)
     enrollment_summary = _summarize_enrollment_profiles(assets_payload)
+    assignments_by_group = assignment_payload.get("assignments_by_group", {}) if assignment_payload else {}
 
     summary_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
     summary_slide.shapes.title.text = "Executive Summary"
@@ -650,9 +651,40 @@ def _write_pptx_report(report: RenderedReport, output_path: Path) -> None:
         no_data_box = policies_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
         no_data_box.text_frame.text = "No group assignment data available."
 
+    relationship_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    relationship_slide.shapes.title.text = "Group Policy Relationships"
+    if group_summary and assignments_by_group:
+        top_groups = sorted(group_summary, key=lambda item: item["assigned_assets"], reverse=True)[:8]
+        chart_data = BubbleChartData()
+        series = chart_data.add_series("Group Impact")
+        for row in top_groups:
+            group_name = row["name"]
+            series.add_data_point(
+                row["assigned_assets"],
+                row["settings_applied"],
+                assignments_by_group.get(group_name, 0),
+                group_name,
+            )
+        chart = relationship_slide.shapes.add_chart(
+            XL_CHART_TYPE.BUBBLE,
+            Inches(0.8),
+            Inches(1.6),
+            Inches(8.4),
+            Inches(3.8),
+            chart_data,
+        ).chart
+        chart.has_legend = False
+        chart.value_axis.has_major_gridlines = True
+        explanation_box = relationship_slide.shapes.add_textbox(Inches(0.8), Inches(5.5), Inches(8.4), Inches(0.4))
+        explanation_box.text_frame.text = (
+            "X = Policies Applied, Y = Settings Applied, Bubble Size = Group Assignment Count"
+        )
+    else:
+        no_data_box = relationship_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
+        no_data_box.text_frame.text = "No group relationship data available."
+
     coverage_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
     coverage_slide.shapes.title.text = "Group Coverage Overview"
-    assignments_by_group = assignment_payload.get("assignments_by_group", {}) if assignment_payload else {}
     if assignments_by_group:
         sorted_groups = sorted(assignments_by_group.items(), key=lambda item: item[1], reverse=True)[:10]
         chart_data = CategoryChartData()
@@ -777,6 +809,7 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         "Policy",
         "Policy Description",
         "Policy Type",
+        "Group",
         "Assigned Group Count",
         "Assignment Scope",
     ]
@@ -787,6 +820,7 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = border
 
+    assignment_rows: list[list[object]] = []
     for asset in assets_payload:
         policy_name = asset.get("name") or "Unnamed Policy"
         policy_description = asset.get("description") or ""
@@ -812,19 +846,34 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         else:
             assignment_scope = "Unassigned"
 
+        group_labels = sorted(group_names, key=str.casefold) if group_names else []
+        if not group_labels:
+            group_labels = sorted(target_labels, key=str.casefold) if target_labels else ["Unassigned"]
         for setting_row in _extract_setting_rows(settings):
-            assignments_sheet.append(
-                [
-                    setting_row["setting"],
-                    setting_row["value"],
-                    setting_row["description"],
-                    policy_name,
-                    policy_description,
-                    policy_type,
-                    group_count,
-                    assignment_scope,
-                ]
-            )
+            for group_label in group_labels:
+                assignment_rows.append(
+                    [
+                        setting_row["setting"],
+                        setting_row["value"],
+                        setting_row["description"],
+                        policy_name,
+                        policy_description,
+                        policy_type,
+                        group_label,
+                        group_count,
+                        assignment_scope,
+                    ]
+                )
+
+    assignment_rows.sort(
+        key=lambda row: (
+            str(row[6]).casefold(),
+            str(row[0]).casefold(),
+            str(row[3]).casefold(),
+        )
+    )
+    for row in assignment_rows:
+        assignments_sheet.append(row)
 
     for row in assignments_sheet.iter_rows(
         min_row=2,
@@ -833,7 +882,7 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
     ):
         for cell in row:
             cell.border = border
-            if cell.column == 7:
+            if cell.column == 8:
                 cell.alignment = Alignment(horizontal="center")
             else:
                 cell.alignment = Alignment(horizontal="left")
