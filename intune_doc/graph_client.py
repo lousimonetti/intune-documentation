@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class GraphClient:
@@ -25,7 +29,22 @@ class GraphClient:
         request.add_header("Authorization", f"Bearer {self.token}")
         request.add_header("Accept", "application/json")
 
-        with urllib.request.urlopen(request) as response:
-            payload = response.read().decode("utf-8")
+        logger.debug("Graph GET request to %s", url)
+        try:
+            with urllib.request.urlopen(request) as response:
+                payload = response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode("utf-8") if exc.fp else ""
+            logger.error(
+                "Graph GET request failed (%s %s) for %s. Response: %s",
+                exc.code,
+                exc.reason,
+                url,
+                error_body,
+            )
+            raise
+        except urllib.error.URLError as exc:
+            logger.error("Graph GET request failed for %s: %s", url, exc.reason)
+            raise
 
         return json.loads(payload)
