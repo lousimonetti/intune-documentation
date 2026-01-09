@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any, Callable, Dict, Iterable, List, Optional
 import urllib.error
 
 from .assignments import collect_assignments
+
+logger = logging.getLogger(__name__)
 
 
 SettingsExtractor = Callable[[Dict[str, Any]], Dict[str, Any]]
@@ -22,12 +25,27 @@ class ResourceDefinition:
 
 
 def paginate(graph_client: Any, path: str, params: Optional[Dict[str, str]] = None) -> Iterable[Dict[str, Any]]:
+    suppress_errors = bool(params and "$select" in params)
     try:
-        response = graph_client.get(path, params=params)
+        response = graph_client.get(path, params=params, log_errors=not suppress_errors)
     except urllib.error.HTTPError as exc:
         if exc.code == 400 and params and "$select" in params:
-            response = graph_client.get(path)
+            logger.warning(
+                "Graph GET request failed for %s with $select. Retrying without $select parameters.",
+                path,
+            )
+            try:
+                response = graph_client.get(path)
+            except urllib.error.HTTPError as retry_exc:
+                if retry_exc.code in {403, 404}:
+                    logger.warning("Graph GET request for %s returned %s. Skipping export.", path, retry_exc.code)
+                    return
+                raise
+        elif exc.code in {403, 404}:
+            logger.warning("Graph GET request for %s returned %s. Skipping export.", path, exc.code)
+            return
         else:
+            logger.error("Graph GET request for %s failed with %s.", path, exc.code)
             raise
     for item in response.get("value", []):
         yield item
