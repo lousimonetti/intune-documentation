@@ -325,11 +325,34 @@ def _extract_oma_setting_rows(settings: Dict[str, object]) -> list[tuple[str, st
             or "Unnamed Setting"
         )
         value = entry.get("value")
-        value_text = (
-            json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
-        )
-        rows.append((str(setting_name), value_text))
+        rows.append((str(setting_name), _stringify_setting_value(value)))
     return rows
+
+
+def _stringify_setting_value(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
+
+
+def _extract_setting_rows(settings: Dict[str, object]) -> list[tuple[str, str]]:
+    if not isinstance(settings, dict):
+        return [("N/A", "N/A")]
+    rows = _extract_oma_setting_rows(settings)
+    if rows:
+        remaining_settings = {key: value for key, value in settings.items() if key != "settings"}
+    else:
+        remaining_settings = settings
+    for key, value in remaining_settings.items():
+        rows.append((str(key), _stringify_setting_value(value)))
+    return rows or [("N/A", "N/A")]
+
+
+def _assignment_target_label(mapping: Dict[str, object]) -> str | None:
+    target_type = str(mapping.get("targetType") or "").lower()
+    if "alldevicesassignmenttarget" in target_type or "alldevices" in target_type:
+        return "ALL DEVICES"
+    if "alllicensedusersassignmenttarget" in target_type or "allusers" in target_type:
+        return "ALL USERS"
+    return None
 
 
 def _render_assignment_coverage_section(document: Document, payload: Dict[str, object]) -> None:
@@ -561,7 +584,13 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
     sheet = workbook.active
     sheet.title = "Assignments"
 
-    headers = ["Setting Name", "Policy Name", "Group Assigned", "Number of Devices Applied"]
+    headers = [
+        "Setting",
+        "Setting Value",
+        "Policy",
+        "Assigned Group Count",
+        "Assignment Scope",
+    ]
     sheet.append(headers)
 
     header_font = Font(bold=True, color="FFFFFF")
@@ -581,23 +610,32 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         cell.border = border
 
     assets_payload = _extract_assets_payload(report)
-    assignment_payload = _extract_assignment_coverage_payload(report)
-    assignments_by_group = assignment_payload.get("assignments_by_group", {}) if assignment_payload else {}
 
     for asset in assets_payload:
         policy_name = asset.get("name") or "Unnamed Policy"
         settings = asset.get("settings", {}) or {}
-        setting_names = _extract_setting_names(settings)
         assignments = asset.get("assignment_mappings", []) or []
-        if not assignments:
-            for setting_name in setting_names:
-                sheet.append([setting_name, policy_name, "Unassigned", 0])
-            continue
-        for mapping in assignments:
-            group_name = mapping.get("groupDisplayName") or mapping.get("groupId") or "Unknown Group"
-            device_count = assignments_by_group.get(group_name, 0)
-            for setting_name in setting_names:
-                sheet.append([setting_name, policy_name, group_name, device_count])
+        group_names = {
+            mapping.get("groupDisplayName") or mapping.get("groupId")
+            for mapping in assignments
+            if mapping.get("groupDisplayName") or mapping.get("groupId")
+        }
+        group_names.discard(None)
+        group_count = len(group_names)
+        target_labels = {
+            label for mapping in assignments if (label := _assignment_target_label(mapping))
+        }
+        if assignments:
+            scope_parts = []
+            if group_count:
+                scope_parts.append("Groups")
+            scope_parts.extend(sorted(target_labels))
+            assignment_scope = ", ".join(scope_parts) if scope_parts else "Unassigned"
+        else:
+            assignment_scope = "Unassigned"
+
+        for setting_name, setting_value in _extract_setting_rows(settings):
+            sheet.append([setting_name, setting_value, policy_name, group_count, assignment_scope])
 
     for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, max_col=sheet.max_column):
         for cell in row:

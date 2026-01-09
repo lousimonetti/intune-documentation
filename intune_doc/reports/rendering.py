@@ -20,6 +20,7 @@ def _distill_assignment_mappings(assignments: List[Dict[str, Any]]) -> List[Dict
                 "groupType": target.get("groupType"),
                 "groupDynamicRule": target.get("groupDynamicRule"),
                 "assignmentType": target.get("assignmentType"),
+                "targetType": target.get("@odata.type") or target.get("type"),
                 "intent": assignment.get("intent"),
                 "delivery": assignment.get("delivery"),
                 "schedule": assignment.get("schedule"),
