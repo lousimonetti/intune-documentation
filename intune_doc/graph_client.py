@@ -15,7 +15,13 @@ class GraphClient:
         self.base_url = base_url.rstrip("/")
         self.token = token
 
-    def get(self, path: str, params: Optional[Dict[str, str]] = None, is_absolute: bool = False) -> Dict[str, Any]:
+    def get(
+        self,
+        path: str,
+        params: Optional[Dict[str, str]] = None,
+        is_absolute: bool = False,
+        log_errors: bool = True,
+    ) -> Dict[str, Any]:
         if is_absolute:
             url = path
         else:
@@ -28,6 +34,7 @@ class GraphClient:
         request = urllib.request.Request(url)
         request.add_header("Authorization", f"Bearer {self.token}")
         request.add_header("Accept", "application/json")
+        request.add_header("consistencylevel", "eventual")
 
         logger.debug("Graph GET request to %s", url)
         try:
@@ -35,13 +42,14 @@ class GraphClient:
                 payload = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             error_body = exc.read().decode("utf-8") if exc.fp else ""
-            logger.error(
-                "Graph GET request failed (%s %s) for %s. Response: %s",
-                exc.code,
-                exc.reason,
-                url,
-                error_body,
-            )
+            if log_errors:
+                logger.error(
+                    "Graph GET request failed (%s %s) for %s. Response: %s",
+                    exc.code,
+                    exc.reason,
+                    url,
+                    error_body,
+                )
             raise
         except urllib.error.URLError as exc:
             logger.error("Graph GET request failed for %s: %s", url, exc.reason)
