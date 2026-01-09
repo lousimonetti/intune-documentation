@@ -65,3 +65,17 @@ pwsh ./scripts/Export-IntuneDocumentation.ps1 -ConfigPath ./config.yaml -Format 
 ```powershell
 pwsh ./scripts/Export-IntuneDocumentation.ps1 -ConfigPath ./config.yaml -Format Word,Excel,Pdf,Ppt -Audience Admin -Scope AssignmentSummary -OutputPath ./reports/intune
 ```
+
+## Tests
+
+Run the unit tests with the standard library test runner:
+
+```bash
+python -m unittest discover -s tests
+```
+
+Run an individual test module:
+
+```bash
+python -m unittest tests.test_cli
+```
