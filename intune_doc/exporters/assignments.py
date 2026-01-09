@@ -88,11 +88,16 @@ def collect_assignments(graph_client: Any, assignment_path: str) -> List[Dict[st
         if not target:
             continue
         group = resolved_groups.get(target["groupId"], {})
+        group_missing = not bool(group)
+        group_display_name = group.get("displayName")
+        if group_missing:
+            group_display_name = f"Unknown group ({target['groupId']})"
         normalized.append(
             {
                 "target": {
                     "groupId": target["groupId"],
-                    "groupDisplayName": group.get("displayName"),
+                    "groupDisplayName": group_display_name,
+                    "groupMissing": group_missing,
                     "groupType": _group_type(group),
                     "assignmentType": target["assignmentType"],
                 },
