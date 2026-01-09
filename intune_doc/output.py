@@ -5,6 +5,8 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Dict, Iterable
 
+from docx import Document
+
 from .reports.schema import RenderedReport
 
 
@@ -38,14 +40,39 @@ def write_rendered_reports(
 
     for format_name, report in rendered.items():
         filtered_report = _filter_sections(report, include_sections)
-        output_path = output_prefix.with_name(f"{output_prefix.name}-{format_name}.json")
-        output_path.write_text(
-            json.dumps(asdict(filtered_report), indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        output_path = _write_report_output(filtered_report, output_prefix, format_name)
         output_paths[format_name] = output_path
 
     return output_paths
+
+
+def _write_report_output(report: RenderedReport, output_prefix: Path, format_name: str) -> Path:
+    json_output_path = output_prefix.with_name(f"{output_prefix.name}-{format_name}.json")
+    json_output_path.write_text(
+        json.dumps(asdict(report), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    if format_name == "word":
+        docx_output_path = output_prefix.with_name(f"{output_prefix.name}-{format_name}.docx")
+        _write_docx_report(report, docx_output_path)
+        return docx_output_path
+    return json_output_path
+
+
+def _write_docx_report(report: RenderedReport, output_path: Path) -> None:
+    document = Document()
+    document.add_heading(f"{report.metadata.organization} Intune Report", level=0)
+    document.add_paragraph(f"Audience: {report.audience}")
+    document.add_paragraph(f"Generated at: {report.metadata.generated_at}")
+
+    for section in report.sections:
+        document.add_heading(section.title, level=1)
+        if section.description:
+            document.add_paragraph(section.description)
+        payload_text = json.dumps(section.payload, indent=2, ensure_ascii=False)
+        document.add_paragraph(payload_text)
+
+    document.save(output_path)
 
 
 def write_raw_export(raw_export: Dict[str, object], output_prefix: Path) -> Path:
