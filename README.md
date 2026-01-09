@@ -30,6 +30,17 @@ intune-doc export --format word,excel,pdf,ppt --audience admin --scope assignmen
 - An Entra ID app registration with Microsoft Graph permissions for Intune exports
 - `config.yaml` created from the provided `config.example.yaml`
 
+### Required Microsoft Graph permissions
+
+Configure the Entra ID app registration with **application permissions** and grant admin
+consent for the following Microsoft Graph scopes:
+
+- `DeviceManagementConfiguration.Read.All`
+- `DeviceManagementApps.Read.All`
+- `DeviceManagementServiceConfig.Read.All`
+- `CloudPC.Read.All`
+- `Group.Read.All`
+
 ## Configuration
 
 1. Copy the example configuration file:
