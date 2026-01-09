@@ -651,38 +651,6 @@ def _write_pptx_report(report: RenderedReport, output_path: Path) -> None:
         no_data_box = policies_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
         no_data_box.text_frame.text = "No group assignment data available."
 
-    relationship_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
-    relationship_slide.shapes.title.text = "Group Policy Relationships"
-    if group_summary and assignments_by_group:
-        top_groups = sorted(group_summary, key=lambda item: item["assigned_assets"], reverse=True)[:8]
-        chart_data = BubbleChartData()
-        series = chart_data.add_series("Group Impact")
-        for row in top_groups:
-            group_name = row["name"]
-            series.add_data_point(
-                row["assigned_assets"],
-                row["settings_applied"],
-                assignments_by_group.get(group_name, 0),
-                group_name,
-            )
-        chart = relationship_slide.shapes.add_chart(
-            XL_CHART_TYPE.BUBBLE,
-            Inches(0.8),
-            Inches(1.6),
-            Inches(8.4),
-            Inches(3.8),
-            chart_data,
-        ).chart
-        chart.has_legend = False
-        chart.value_axis.has_major_gridlines = True
-        explanation_box = relationship_slide.shapes.add_textbox(Inches(0.8), Inches(5.5), Inches(8.4), Inches(0.4))
-        explanation_box.text_frame.text = (
-            "X = Policies Applied, Y = Settings Applied, Bubble Size = Group Assignment Count"
-        )
-    else:
-        no_data_box = relationship_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
-        no_data_box.text_frame.text = "No group relationship data available."
-
     coverage_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
     coverage_slide.shapes.title.text = "Group Coverage Overview"
     if assignments_by_group:
@@ -810,7 +778,6 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         "Policy Description",
         "Policy Type",
         "Group",
-        "Assigned Group Count",
         "Assignment Scope",
     ]
     for col_idx, header in enumerate(assignments_headers, start=1):
@@ -860,7 +827,6 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
                         policy_description,
                         policy_type,
                         group_label,
-                        group_count,
                         assignment_scope,
                     ]
                 )
@@ -882,10 +848,7 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
     ):
         for cell in row:
             cell.border = border
-            if cell.column == 8:
-                cell.alignment = Alignment(horizontal="center")
-            else:
-                cell.alignment = Alignment(horizontal="left")
+            cell.alignment = Alignment(horizontal="left")
 
     def autosize_columns(sheet) -> None:
         for col_idx in range(1, sheet.max_column + 1):
