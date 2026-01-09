@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import sys
 from typing import Iterable, List, Optional
 
 from .reports.cli import SUPPORTED_AUDIENCES, SUPPORTED_FORMATS, SUPPORTED_SCOPES, _parse_formats
@@ -74,5 +75,5 @@ def parse_args(args: Iterable[str]) -> ExportCommandOptions:
 
 
 def main(argv: Optional[Iterable[str]] = None) -> int:
-    parse_args(argv or [])
+    parse_args(list(sys.argv[1:]) if argv is None else argv)
     return 0
