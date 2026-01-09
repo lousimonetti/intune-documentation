@@ -58,7 +58,7 @@ def _resolve_groups(graph_client: Any, group_ids: Iterable[str]) -> Dict[str, Di
             response = graph_client.get(
                 "/groups",
                 params={
-                    "$select": "id,displayName,groupTypes,securityEnabled,mailEnabled",
+                    "$select": "id,displayName,groupTypes,securityEnabled,mailEnabled,membershipRule",
                     "$filter": f"id in ({filter_value})",
                 },
             )
@@ -92,13 +92,15 @@ def collect_assignments(graph_client: Any, assignment_path: str) -> List[Dict[st
         group_display_name = group.get("displayName")
         if group_missing:
             group_display_name = f"Unknown group ({target['groupId']})"
+        group_type = _group_type(group)
         normalized.append(
             {
                 "target": {
                     "groupId": target["groupId"],
                     "groupDisplayName": group_display_name,
                     "groupMissing": group_missing,
-                    "groupType": _group_type(group),
+                    "groupType": group_type,
+                    "groupDynamicRule": group.get("membershipRule") if group_type == "dynamic" else None,
                     "assignmentType": target["assignmentType"],
                 },
                 "intent": assignment.get("intent") or assignment.get("installIntent") or "notApplicable",
