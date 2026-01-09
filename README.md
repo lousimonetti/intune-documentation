@@ -23,6 +23,26 @@ intune-doc export --format word,excel,pdf,ppt --audience admin --scope assignmen
 - An Entra ID app registration with Microsoft Graph permissions for Intune exports
 - `config.yaml` created from the provided `config.example.yaml`
 
+### Python environment setup
+
+Create a virtual environment and install the dependencies (there are no third-party runtime
+dependencies today, so the requirements file is intentionally empty):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Build (Python)
+
+There is no build step required. Run the module directly after installing dependencies:
+
+```bash
+python -m intune_doc --help
+```
+
 ### PowerShell
 
 - PowerShell 7+
