@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional
+import urllib.error
 
 from .assignments import collect_assignments
 
@@ -21,7 +22,13 @@ class ResourceDefinition:
 
 
 def paginate(graph_client: Any, path: str, params: Optional[Dict[str, str]] = None) -> Iterable[Dict[str, Any]]:
-    response = graph_client.get(path, params=params)
+    try:
+        response = graph_client.get(path, params=params)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 400 and params and "$select" in params:
+            response = graph_client.get(path)
+        else:
+            raise
     for item in response.get("value", []):
         yield item
 
