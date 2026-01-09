@@ -6,9 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.cli import ExportCommandOptions, parse_args  # noqa: E402
-from src.reports.cli import SUPPORTED_FORMATS  # noqa: E402
-from src.reports.schema import DEFAULT_REPORT_SCOPE  # noqa: E402
+from intune_doc.cli import ExportCommandOptions, parse_args  # noqa: E402
+from intune_doc.reports.cli import SUPPORTED_FORMATS  # noqa: E402
+from intune_doc.reports.schema import DEFAULT_REPORT_SCOPE  # noqa: E402
 
 
 class TestCliParsing(unittest.TestCase):
