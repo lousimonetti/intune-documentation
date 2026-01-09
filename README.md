@@ -57,6 +57,19 @@ consent for the following Microsoft Graph scopes:
    - `output_directory`
    - `report_options`
 
+### `include_sections` options
+
+The `report_options.include_sections` list controls which report sections are rendered. The
+available values are:
+
+- `summary`: A high-level executive summary that aggregates Intune export metrics (for
+  example, total assets, assignment counts, and highlights derived from the exported data).
+- `assets`: Detailed Intune asset inventories pulled from Microsoft Graph, including device
+  configurations, settings catalog policies, Autopilot profiles, enrollment profiles, scripts,
+  initial access policies, Windows 365 configurations, provisioning profiles, and images.
+- `assignment_coverage`: Assignment rollups based on Microsoft Graph assignment data, including
+  totals for assigned vs. unassigned assets and group-level assignment counts.
+
 ## Running (Python)
 
 ```bash
