@@ -57,11 +57,13 @@ def _build_assignment_coverage(assets: List[AssetDetail]) -> AssignmentCoverage:
 def _build_asset_details(raw_assets: Iterable[Dict[str, Any]]) -> List[AssetDetail]:
     assets: List[AssetDetail] = []
     for raw in raw_assets:
+        raw_details = raw.get("raw") if isinstance(raw.get("raw"), dict) else {}
         assets.append(
             AssetDetail(
                 asset_id=str(raw.get("id")),
                 name=str(raw.get("displayName") or raw.get("name") or raw.get("id")),
                 asset_type=str(raw.get("type")),
+                description=str(raw.get("description") or raw_details.get("description") or ""),
                 settings=raw.get("settings") or {},
                 assignments=raw.get("assignments") or [],
                 assignment_mappings=raw.get("assignmentMappings") or [],

@@ -150,31 +150,76 @@ def _render_summary_section(document: Document, payload: Dict[str, object], asse
             row_cells[1].text = json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
 
     if assets_payload:
-        document.add_paragraph("Group KPI Dashboard")
-        _render_group_kpi_table(document, assets_payload)
+        document.add_paragraph("Configuration Inventory")
+        _render_configuration_inventory_table(document, assets_payload)
+        document.add_paragraph("Platform Coverage")
+        _render_platform_coverage_table(document, assets_payload)
+        document.add_paragraph("Top Assigned Groups")
+        _render_top_assigned_groups_table(document, assets_payload)
 
 
-def _render_group_kpi_table(document: Document, assets_payload: object) -> None:
+def _render_configuration_inventory_table(document: Document, assets_payload: object) -> None:
+    inventory = _summarize_inventory(assets_payload)
+    if not inventory:
+        document.add_paragraph("No assets available.")
+        return
+    table = document.add_table(rows=1, cols=4)
+    table.style = "Light Grid Accent 1"
+    header_cells = table.rows[0].cells
+    headers = ["Policy Type", "Total", "Assigned", "Unassigned"]
+    for idx, header in enumerate(headers):
+        header_cells[idx].text = header
+        _set_cell_shading(header_cells[idx], "1F4E79")
+    for row in inventory:
+        row_cells = table.add_row().cells
+        row_cells[0].text = row["asset_type"]
+        row_cells[1].text = str(row["total"])
+        row_cells[2].text = str(row["assigned"])
+        row_cells[3].text = str(row["unassigned"])
+        _set_cell_shading(row_cells[2], "C6E0B4")
+        _set_cell_shading(row_cells[3], "FCE4D6")
+
+
+def _render_platform_coverage_table(document: Document, assets_payload: object) -> None:
+    coverage = _summarize_platform_coverage(assets_payload)
+    if not coverage:
+        document.add_paragraph("No platform data available.")
+        return
+    table = document.add_table(rows=1, cols=2)
+    table.style = "Light Grid"
+    header_cells = table.rows[0].cells
+    header_cells[0].text = "Platform"
+    header_cells[1].text = "Configs"
+    _set_cell_shading(header_cells[0], "D9E1F2")
+    _set_cell_shading(header_cells[1], "D9E1F2")
+    for row in coverage:
+        row_cells = table.add_row().cells
+        row_cells[0].text = row["platform"]
+        row_cells[1].text = str(row["count"])
+
+
+def _render_top_assigned_groups_table(document: Document, assets_payload: object) -> None:
     group_summary = _summarize_groups(assets_payload)
     if not group_summary:
         document.add_paragraph("No group assignments available.")
         return
+    top_groups = sorted(group_summary, key=lambda item: item["assigned_assets"], reverse=True)[:10]
     table = document.add_table(rows=1, cols=5)
     table.style = "Light Grid Accent 1"
     header_cells = table.rows[0].cells
-    headers = ["Group", "Type", "Dynamic Rule", "Assigned Assets", "Settings Applied"]
+    headers = ["Rank", "Group Name", "Assignments", "Settings Applied", "Type"]
     for idx, header in enumerate(headers):
         header_cells[idx].text = header
         _set_cell_shading(header_cells[idx], "BDD7EE")
-    for row in group_summary:
+    for idx, row in enumerate(top_groups, start=1):
         row_cells = table.add_row().cells
-        row_cells[0].text = row["name"]
-        row_cells[1].text = row["type"]
-        row_cells[2].text = row["dynamic_rule"] or "N/A"
-        row_cells[3].text = str(row["assigned_assets"])
-        row_cells[4].text = str(row["settings_applied"])
-        _set_cell_shading(row_cells[3], "C6E0B4")
-        _set_cell_shading(row_cells[4], "FCE4D6")
+        row_cells[0].text = str(idx)
+        row_cells[1].text = row["name"]
+        row_cells[2].text = str(row["assigned_assets"])
+        row_cells[3].text = str(row["settings_applied"])
+        row_cells[4].text = row["type"]
+        _set_cell_shading(row_cells[2], "C6E0B4")
+        _set_cell_shading(row_cells[3], "FCE4D6")
 
 
 def _summarize_groups(assets_payload: object) -> list[dict[str, object]]:
@@ -217,6 +262,60 @@ def _summarize_groups(assets_payload: object) -> list[dict[str, object]]:
     return sorted(results, key=lambda item: item["name"].lower())
 
 
+def _summarize_inventory(assets_payload: object) -> list[dict[str, object]]:
+    if not isinstance(assets_payload, list):
+        return []
+    summary: Dict[str, dict[str, int]] = {}
+    for asset in assets_payload:
+        asset_type = asset.get("asset_type") or "Unknown"
+        assignments = asset.get("assignment_mappings", []) or asset.get("assignments", [])
+        entry = summary.setdefault(str(asset_type), {"total": 0, "assigned": 0, "unassigned": 0})
+        entry["total"] += 1
+        if assignments:
+            entry["assigned"] += 1
+        else:
+            entry["unassigned"] += 1
+    results: list[dict[str, object]] = []
+    for asset_type, counts in summary.items():
+        results.append(
+            {
+                "asset_type": asset_type.replace("_", " ").title(),
+                "total": counts["total"],
+                "assigned": counts["assigned"],
+                "unassigned": counts["unassigned"],
+            }
+        )
+    return sorted(results, key=lambda item: item["asset_type"].lower())
+
+
+def _extract_platforms(settings: Dict[str, object]) -> list[str]:
+    platforms: list[str] = []
+    if not isinstance(settings, dict):
+        return platforms
+    for key in ("platforms", "platform", "platformType"):
+        value = settings.get(key)
+        if isinstance(value, list):
+            platforms.extend(str(item) for item in value if item)
+        elif value:
+            platforms.append(str(value))
+    return platforms
+
+
+def _summarize_platform_coverage(assets_payload: object) -> list[dict[str, object]]:
+    if not isinstance(assets_payload, list):
+        return []
+    platform_counts: Dict[str, int] = {}
+    for asset in assets_payload:
+        settings = asset.get("settings", {}) or {}
+        platforms = _extract_platforms(settings)
+        for platform in platforms or ["Unknown"]:
+            platform_counts[platform] = platform_counts.get(platform, 0) + 1
+    return sorted(
+        [{"platform": platform, "count": count} for platform, count in platform_counts.items()],
+        key=lambda item: item["platform"].lower(),
+    )
+
+
 def _render_assets_section(document: Document, assets_payload: object) -> None:
     if not isinstance(assets_payload, list):
         document.add_paragraph("No asset data available.")
@@ -226,6 +325,9 @@ def _render_assets_section(document: Document, assets_payload: object) -> None:
         asset_type = asset.get("asset_type") or "Unknown"
         document.add_heading(f"{asset_name} ({asset_type})", level=2)
         document.add_paragraph(f"Asset ID: {asset.get('asset_id')}")
+        asset_description = asset.get("description")
+        if asset_description:
+            document.add_paragraph(str(asset_description))
 
         settings = asset.get("settings", {}) or {}
         document.add_paragraph("Settings")
@@ -240,7 +342,7 @@ def _render_assets_section(document: Document, assets_payload: object) -> None:
                     document.add_paragraph("Additional Settings")
                     _render_key_value_table(document, remaining_settings)
             else:
-                _render_key_value_table(document, settings)
+                _render_settings_table(document, _extract_setting_rows(settings))
         else:
             document.add_paragraph("No settings recorded.")
 
@@ -296,25 +398,28 @@ def _render_key_value_table(document: Document, settings: Dict[str, object]) -> 
         )
 
 
-def _render_settings_table(document: Document, rows: Iterable[tuple[str, str]]) -> None:
-    table = document.add_table(rows=1, cols=2)
+def _render_settings_table(document: Document, rows: Iterable[dict[str, str]]) -> None:
+    table = document.add_table(rows=1, cols=3)
     table.style = "Light Grid"
     header_cells = table.rows[0].cells
     header_cells[0].text = "Setting"
     header_cells[1].text = "Value"
+    header_cells[2].text = "Description"
     _set_cell_shading(header_cells[0], "E2EFDA")
     _set_cell_shading(header_cells[1], "E2EFDA")
-    for setting_name, value in rows:
+    _set_cell_shading(header_cells[2], "E2EFDA")
+    for row in rows:
         row_cells = table.add_row().cells
-        row_cells[0].text = setting_name
-        row_cells[1].text = value
+        row_cells[0].text = row["setting"]
+        row_cells[1].text = row["value"]
+        row_cells[2].text = row["description"]
 
 
-def _extract_oma_setting_rows(settings: Dict[str, object]) -> list[tuple[str, str]]:
+def _extract_oma_setting_rows(settings: Dict[str, object]) -> list[dict[str, str]]:
     raw_settings = settings.get("settings")
     if not isinstance(raw_settings, list):
         return []
-    rows: list[tuple[str, str]] = []
+    rows: list[dict[str, str]] = []
     for entry in raw_settings:
         if not isinstance(entry, dict):
             continue
@@ -324,8 +429,19 @@ def _extract_oma_setting_rows(settings: Dict[str, object]) -> list[tuple[str, st
             or entry.get("settingDefinitionId")
             or "Unnamed Setting"
         )
+        description = (
+            entry.get("description")
+            or (entry.get("settingDefinition") or {}).get("description")
+            or ""
+        )
         value = entry.get("value")
-        rows.append((str(setting_name), _stringify_setting_value(value)))
+        rows.append(
+            {
+                "setting": str(setting_name),
+                "value": _stringify_setting_value(value),
+                "description": str(description),
+            }
+        )
     return rows
 
 
@@ -333,17 +449,17 @@ def _stringify_setting_value(value: object) -> str:
     return json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
 
 
-def _extract_setting_rows(settings: Dict[str, object]) -> list[tuple[str, str]]:
+def _extract_setting_rows(settings: Dict[str, object]) -> list[dict[str, str]]:
     if not isinstance(settings, dict):
-        return [("N/A", "N/A")]
+        return [{"setting": "N/A", "value": "N/A", "description": ""}]
     rows = _extract_oma_setting_rows(settings)
     if rows:
         remaining_settings = {key: value for key, value in settings.items() if key != "settings"}
     else:
         remaining_settings = settings
     for key, value in remaining_settings.items():
-        rows.append((str(key), _stringify_setting_value(value)))
-    return rows or [("N/A", "N/A")]
+        rows.append({"setting": str(key), "value": _stringify_setting_value(value), "description": ""})
+    return rows or [{"setting": "N/A", "value": "N/A", "description": ""}]
 
 
 def _assignment_target_label(mapping: Dict[str, object]) -> str | None:
@@ -581,20 +697,9 @@ def _write_pptx_report(report: RenderedReport, output_path: Path) -> None:
 
 def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
     workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Assignments"
-
-    headers = [
-        "Setting",
-        "Setting Value",
-        "Policy",
-        "Assigned Group Count",
-        "Assignment Scope",
-    ]
-    sheet.append(headers)
-
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    section_title_font = Font(bold=True, size=14)
     border = Border(
         left=Side(style="thin"),
         right=Side(style="thin"),
@@ -602,17 +707,90 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         bottom=Side(style="thin"),
     )
 
-    for col_idx, header in enumerate(headers, start=1):
-        cell = sheet.cell(row=1, column=col_idx)
+    assets_payload = _extract_assets_payload(report)
+
+    summary_sheet = workbook.active
+    summary_sheet.title = "Summary"
+    row_cursor = 1
+
+    def add_section_title(sheet, title: str, row: int) -> int:
+        cell = sheet.cell(row=row, column=1, value=title)
+        cell.font = section_title_font
+        return row + 1
+
+    def add_table(sheet, headers: list[str], rows: list[list[object]], row: int) -> int:
+        header_row = row
+        for col_idx, header in enumerate(headers, start=1):
+            cell = sheet.cell(row=header_row, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = border
+        row = header_row + 1
+        for row_data in rows:
+            for col_idx, value in enumerate(row_data, start=1):
+                cell = sheet.cell(row=row, column=col_idx, value=value)
+                cell.border = border
+                cell.alignment = Alignment(horizontal="left")
+            row += 1
+        return row
+
+    inventory_rows = [
+        [row["asset_type"], row["total"], row["assigned"], row["unassigned"]]
+        for row in _summarize_inventory(assets_payload)
+    ]
+    row_cursor = add_section_title(summary_sheet, "Configuration Inventory", row_cursor)
+    row_cursor = add_table(
+        summary_sheet,
+        ["Policy Type", "Total", "Assigned", "Unassigned"],
+        inventory_rows,
+        row_cursor,
+    )
+    row_cursor += 2
+
+    platform_rows = [
+        [row["platform"], row["count"]]
+        for row in _summarize_platform_coverage(assets_payload)
+    ]
+    row_cursor = add_section_title(summary_sheet, "Platform Coverage", row_cursor)
+    row_cursor = add_table(summary_sheet, ["Platform", "Configs"], platform_rows, row_cursor)
+    row_cursor += 2
+
+    top_groups = sorted(_summarize_groups(assets_payload), key=lambda item: item["assigned_assets"], reverse=True)[:10]
+    top_group_rows = [
+        [idx, row["name"], row["assigned_assets"], row["settings_applied"], row["type"]]
+        for idx, row in enumerate(top_groups, start=1)
+    ]
+    row_cursor = add_section_title(summary_sheet, "Top Assigned Groups", row_cursor)
+    add_table(
+        summary_sheet,
+        ["Rank", "Group Name", "Assignments", "Settings Applied", "Type"],
+        top_group_rows,
+        row_cursor,
+    )
+
+    assignments_sheet = workbook.create_sheet("Assignments")
+    assignments_headers = [
+        "Setting",
+        "Setting Value",
+        "Description",
+        "Policy",
+        "Policy Description",
+        "Policy Type",
+        "Assigned Group Count",
+        "Assignment Scope",
+    ]
+    for col_idx, header in enumerate(assignments_headers, start=1):
+        cell = assignments_sheet.cell(row=1, column=col_idx, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = border
 
-    assets_payload = _extract_assets_payload(report)
-
     for asset in assets_payload:
         policy_name = asset.get("name") or "Unnamed Policy"
+        policy_description = asset.get("description") or ""
+        policy_type = asset.get("asset_type") or "Unknown"
         settings = asset.get("settings", {}) or {}
         assignments = asset.get("assignment_mappings", []) or []
         group_names = {
@@ -634,25 +812,44 @@ def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
         else:
             assignment_scope = "Unassigned"
 
-        for setting_name, setting_value in _extract_setting_rows(settings):
-            sheet.append([setting_name, setting_value, policy_name, group_count, assignment_scope])
+        for setting_row in _extract_setting_rows(settings):
+            assignments_sheet.append(
+                [
+                    setting_row["setting"],
+                    setting_row["value"],
+                    setting_row["description"],
+                    policy_name,
+                    policy_description,
+                    policy_type,
+                    group_count,
+                    assignment_scope,
+                ]
+            )
 
-    for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, max_col=sheet.max_column):
+    for row in assignments_sheet.iter_rows(
+        min_row=2,
+        max_row=assignments_sheet.max_row,
+        max_col=assignments_sheet.max_column,
+    ):
         for cell in row:
             cell.border = border
-            if cell.column == 4:
+            if cell.column == 7:
                 cell.alignment = Alignment(horizontal="center")
             else:
                 cell.alignment = Alignment(horizontal="left")
 
-    for col_idx in range(1, sheet.max_column + 1):
-        column_letter = get_column_letter(col_idx)
-        max_length = 0
-        for cell in sheet[column_letter]:
-            if cell.value is None:
-                continue
-            max_length = max(max_length, len(str(cell.value)))
-        sheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
+    def autosize_columns(sheet) -> None:
+        for col_idx in range(1, sheet.max_column + 1):
+            column_letter = get_column_letter(col_idx)
+            max_length = 0
+            for cell in sheet[column_letter]:
+                if cell.value is None:
+                    continue
+                max_length = max(max_length, len(str(cell.value)))
+            sheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
+
+    autosize_columns(summary_sheet)
+    autosize_columns(assignments_sheet)
 
     workbook.save(output_path)
 

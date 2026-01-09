@@ -27,6 +27,7 @@ class AssetDetail:
     asset_id: str
     name: str
     asset_type: str
+    description: str = ""
     settings: Dict[str, Any] = field(default_factory=dict)
     assignments: List[Dict[str, Any]] = field(default_factory=list)
     assignment_mappings: List[Dict[str, Any]] = field(default_factory=list)
