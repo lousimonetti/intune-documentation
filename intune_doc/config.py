@@ -50,7 +50,7 @@ def load_config(path: Path) -> AppConfig:
 
     missing = [
         name
-        for name, value in ("tenant_id", tenant_id), ("client_id", client_id)
+        for name, value in (("tenant_id", tenant_id), ("client_id", client_id))
         if not value
     ]
     if missing:
