@@ -215,21 +215,17 @@ def _render_assets_section(document: Document, assets_payload: object) -> None:
         settings = asset.get("settings", {}) or {}
         document.add_paragraph("Settings")
         if settings:
-            table = document.add_table(rows=1, cols=2)
-            table.style = "Light Grid"
-            header_cells = table.rows[0].cells
-            header_cells[0].text = "Setting"
-            header_cells[1].text = "Value"
-            _set_cell_shading(header_cells[0], "E2EFDA")
-            _set_cell_shading(header_cells[1], "E2EFDA")
-            for key, value in settings.items():
-                row_cells = table.add_row().cells
-                row_cells[0].text = str(key)
-                row_cells[1].text = (
-                    json.dumps(value, ensure_ascii=False)
-                    if isinstance(value, (dict, list))
-                    else str(value)
-                )
+            oma_rows = _extract_oma_setting_rows(settings)
+            if oma_rows:
+                _render_settings_table(document, oma_rows)
+                remaining_settings = {
+                    key: value for key, value in settings.items() if key != "settings"
+                }
+                if remaining_settings:
+                    document.add_paragraph("Additional Settings")
+                    _render_key_value_table(document, remaining_settings)
+            else:
+                _render_key_value_table(document, settings)
         else:
             document.add_paragraph("No settings recorded.")
 
@@ -267,6 +263,58 @@ def _render_assets_section(document: Document, assets_payload: object) -> None:
                 row_cells[6].text = mapping.get("groupDynamicRule") or "N/A"
         else:
             document.add_paragraph("No assignments recorded.")
+
+
+def _render_key_value_table(document: Document, settings: Dict[str, object]) -> None:
+    table = document.add_table(rows=1, cols=2)
+    table.style = "Light Grid"
+    header_cells = table.rows[0].cells
+    header_cells[0].text = "Setting"
+    header_cells[1].text = "Value"
+    _set_cell_shading(header_cells[0], "E2EFDA")
+    _set_cell_shading(header_cells[1], "E2EFDA")
+    for key, value in settings.items():
+        row_cells = table.add_row().cells
+        row_cells[0].text = str(key)
+        row_cells[1].text = (
+            json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
+        )
+
+
+def _render_settings_table(document: Document, rows: Iterable[tuple[str, str]]) -> None:
+    table = document.add_table(rows=1, cols=2)
+    table.style = "Light Grid"
+    header_cells = table.rows[0].cells
+    header_cells[0].text = "Setting"
+    header_cells[1].text = "Value"
+    _set_cell_shading(header_cells[0], "E2EFDA")
+    _set_cell_shading(header_cells[1], "E2EFDA")
+    for setting_name, value in rows:
+        row_cells = table.add_row().cells
+        row_cells[0].text = setting_name
+        row_cells[1].text = value
+
+
+def _extract_oma_setting_rows(settings: Dict[str, object]) -> list[tuple[str, str]]:
+    raw_settings = settings.get("settings")
+    if not isinstance(raw_settings, list):
+        return []
+    rows: list[tuple[str, str]] = []
+    for entry in raw_settings:
+        if not isinstance(entry, dict):
+            continue
+        setting_name = (
+            entry.get("omaUri")
+            or entry.get("displayName")
+            or entry.get("settingDefinitionId")
+            or "Unnamed Setting"
+        )
+        value = entry.get("value")
+        value_text = (
+            json.dumps(value, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
+        )
+        rows.append((str(setting_name), value_text))
+    return rows
 
 
 def _render_assignment_coverage_section(document: Document, payload: Dict[str, object]) -> None:
