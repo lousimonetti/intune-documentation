@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 
 class GraphClient:
-    def __init__(self, token: str, base_url: str = "https://graph.microsoft.com/v1.0") -> None:
+    def __init__(self, token: str, base_url: str = "https://graph.microsoft.com/beta") -> None:
         self.base_url = base_url.rstrip("/")
         self.token = token
 
