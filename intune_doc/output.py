@@ -8,6 +8,13 @@ from typing import Dict, Iterable
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+from pptx import Presentation
+from pptx.chart.data import CategoryChartData
+from pptx.enum.chart import XL_CHART_TYPE
+from pptx.util import Inches
 
 from .reports.schema import RenderedReport
 
@@ -58,6 +65,14 @@ def _write_report_output(report: RenderedReport, output_prefix: Path, format_nam
         docx_output_path = output_prefix.with_name(f"{output_prefix.name}-{format_name}.docx")
         _write_docx_report(report, docx_output_path)
         return docx_output_path
+    if format_name == "ppt":
+        pptx_output_path = output_prefix.with_name(f"{output_prefix.name}-{format_name}.pptx")
+        _write_pptx_report(report, pptx_output_path)
+        return pptx_output_path
+    if format_name == "excel":
+        xlsx_output_path = output_prefix.with_name(f"{output_prefix.name}-{format_name}.xlsx")
+        _write_excel_report(report, xlsx_output_path)
+        return xlsx_output_path
     return json_output_path
 
 
@@ -346,6 +361,262 @@ def _render_assignment_coverage_section(document: Document, payload: Dict[str, o
             row_cells[1].text = str(count)
     else:
         document.add_paragraph("No group assignment coverage available.")
+
+
+def _extract_assets_payload(report: RenderedReport) -> list[dict[str, object]]:
+    assets_payload = next(
+        (section.payload.get("assets") for section in report.sections if "assets" in section.payload),
+        None,
+    )
+    if isinstance(assets_payload, list):
+        return assets_payload
+    return []
+
+
+def _extract_assignment_coverage_payload(report: RenderedReport) -> Dict[str, object]:
+    payload = next(
+        (
+            section.payload.get("assignment_coverage")
+            for section in report.sections
+            if "assignment_coverage" in section.payload
+        ),
+        None,
+    )
+    if isinstance(payload, dict):
+        return payload
+    return {}
+
+
+def _extract_summary_payload(report: RenderedReport) -> Dict[str, object]:
+    payload = next(
+        (section.payload.get("summary") for section in report.sections if "summary" in section.payload),
+        None,
+    )
+    if isinstance(payload, dict):
+        return payload
+    return {}
+
+
+def _extract_setting_names(settings: Dict[str, object]) -> list[str]:
+    names: list[str] = []
+    if not isinstance(settings, dict):
+        return ["N/A"]
+    raw_settings = settings.get("settings")
+    if isinstance(raw_settings, list):
+        for entry in raw_settings:
+            if not isinstance(entry, dict):
+                continue
+            setting_name = (
+                entry.get("omaUri")
+                or entry.get("displayName")
+                or entry.get("settingDefinitionId")
+                or "Unnamed Setting"
+            )
+            names.append(str(setting_name))
+    for key in settings.keys():
+        if key == "settings":
+            continue
+        names.append(str(key))
+    return names or ["N/A"]
+
+
+def _summarize_enrollment_profiles(
+    assets_payload: list[dict[str, object]],
+) -> list[dict[str, str]]:
+    summary: Dict[str, list[str]] = {}
+    for asset in assets_payload:
+        if asset.get("asset_type") != "enrollment_profiles":
+            continue
+        profile_name = asset.get("name") or "Unnamed Enrollment Profile"
+        for mapping in asset.get("assignment_mappings", []) or []:
+            group_name = mapping.get("groupDisplayName") or mapping.get("groupId")
+            if not group_name:
+                continue
+            summary.setdefault(str(group_name), []).append(str(profile_name))
+
+    results: list[dict[str, str]] = []
+    for group_name, profiles in summary.items():
+        unique_profiles = sorted(set(profiles), key=str.lower)
+        results.append(
+            {
+                "group": group_name,
+                "profiles": ", ".join(unique_profiles),
+            }
+        )
+    return sorted(results, key=lambda item: item["group"].lower())
+
+
+def _write_pptx_report(report: RenderedReport, output_path: Path) -> None:
+    presentation = Presentation()
+    title_slide = presentation.slides.add_slide(presentation.slide_layouts[0])
+    title_slide.shapes.title.text = f"{report.metadata.organization} Intune Report"
+    subtitle = title_slide.placeholders[1]
+    subtitle.text = (
+        f"Audience: {report.audience}\n"
+        f"Generated: {report.metadata.generated_at}"
+    )
+
+    summary_payload = _extract_summary_payload(report)
+    assets_payload = _extract_assets_payload(report)
+    assignment_payload = _extract_assignment_coverage_payload(report)
+    group_summary = _summarize_groups(assets_payload)
+    enrollment_summary = _summarize_enrollment_profiles(assets_payload)
+
+    summary_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    summary_slide.shapes.title.text = "Executive Summary"
+    highlights = summary_payload.get("highlights", []) if isinstance(summary_payload, dict) else []
+    metrics = summary_payload.get("metrics", {}) if isinstance(summary_payload, dict) else {}
+    textbox = summary_slide.shapes.add_textbox(Inches(0.6), Inches(1.4), Inches(4.5), Inches(3.8))
+    text_frame = textbox.text_frame
+    text_frame.text = "Highlights"
+    text_frame.paragraphs[0].font.bold = True
+    for item in highlights:
+        paragraph = text_frame.add_paragraph()
+        paragraph.text = str(item)
+        paragraph.level = 1
+
+    metrics_table = summary_slide.shapes.add_table(
+        rows=len(metrics) + 1,
+        cols=2,
+        left=Inches(5.2),
+        top=Inches(1.4),
+        width=Inches(4.0),
+        height=Inches(3.0),
+    ).table
+    metrics_table.cell(0, 0).text = "Metric"
+    metrics_table.cell(0, 1).text = "Value"
+    for row_idx, (key, value) in enumerate(metrics.items(), start=1):
+        metrics_table.cell(row_idx, 0).text = str(key).replace("_", " ").title()
+        metrics_table.cell(row_idx, 1).text = str(value)
+
+    policies_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    policies_slide.shapes.title.text = "Policies Applied to Groups"
+    if group_summary:
+        top_groups = sorted(group_summary, key=lambda item: item["assigned_assets"], reverse=True)[:10]
+        chart_data = CategoryChartData()
+        chart_data.categories = [row["name"] for row in top_groups]
+        chart_data.add_series("Policies Applied", [row["assigned_assets"] for row in top_groups])
+        chart = policies_slide.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            Inches(0.8),
+            Inches(1.6),
+            Inches(8.4),
+            Inches(3.8),
+            chart_data,
+        ).chart
+        chart.has_legend = False
+        chart.value_axis.has_major_gridlines = True
+        chart.plots[0].has_data_labels = True
+    else:
+        no_data_box = policies_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
+        no_data_box.text_frame.text = "No group assignment data available."
+
+    coverage_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    coverage_slide.shapes.title.text = "Group Coverage Overview"
+    assignments_by_group = assignment_payload.get("assignments_by_group", {}) if assignment_payload else {}
+    if assignments_by_group:
+        sorted_groups = sorted(assignments_by_group.items(), key=lambda item: item[1], reverse=True)[:10]
+        chart_data = CategoryChartData()
+        chart_data.categories = [group for group, _ in sorted_groups]
+        chart_data.add_series("Devices Applied", [count for _, count in sorted_groups])
+        chart = coverage_slide.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            Inches(0.8),
+            Inches(1.6),
+            Inches(8.4),
+            Inches(3.8),
+            chart_data,
+        ).chart
+        chart.has_legend = False
+        chart.plots[0].has_data_labels = True
+    else:
+        no_data_box = coverage_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
+        no_data_box.text_frame.text = "No coverage data available."
+
+    enrollment_slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    enrollment_slide.shapes.title.text = "Enrollment Profiles by Group"
+    if enrollment_summary:
+        table = enrollment_slide.shapes.add_table(
+            rows=len(enrollment_summary) + 1,
+            cols=2,
+            left=Inches(0.6),
+            top=Inches(1.6),
+            width=Inches(9.0),
+            height=Inches(4.0),
+        ).table
+        table.cell(0, 0).text = "Group"
+        table.cell(0, 1).text = "Enrollment Profiles"
+        for row_idx, row in enumerate(enrollment_summary, start=1):
+            table.cell(row_idx, 0).text = row["group"]
+            table.cell(row_idx, 1).text = row["profiles"]
+    else:
+        no_data_box = enrollment_slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(8.0), Inches(1.0))
+        no_data_box.text_frame.text = "No enrollment profile assignments available."
+
+    presentation.save(output_path)
+
+
+def _write_excel_report(report: RenderedReport, output_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Assignments"
+
+    headers = ["Setting Name", "Policy Name", "Group Assigned", "Number of Devices Applied"]
+    sheet.append(headers)
+
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    for col_idx, header in enumerate(headers, start=1):
+        cell = sheet.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+
+    assets_payload = _extract_assets_payload(report)
+    assignment_payload = _extract_assignment_coverage_payload(report)
+    assignments_by_group = assignment_payload.get("assignments_by_group", {}) if assignment_payload else {}
+
+    for asset in assets_payload:
+        policy_name = asset.get("name") or "Unnamed Policy"
+        settings = asset.get("settings", {}) or {}
+        setting_names = _extract_setting_names(settings)
+        assignments = asset.get("assignment_mappings", []) or []
+        if not assignments:
+            for setting_name in setting_names:
+                sheet.append([setting_name, policy_name, "Unassigned", 0])
+            continue
+        for mapping in assignments:
+            group_name = mapping.get("groupDisplayName") or mapping.get("groupId") or "Unknown Group"
+            device_count = assignments_by_group.get(group_name, 0)
+            for setting_name in setting_names:
+                sheet.append([setting_name, policy_name, group_name, device_count])
+
+    for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, max_col=sheet.max_column):
+        for cell in row:
+            cell.border = border
+            if cell.column == 4:
+                cell.alignment = Alignment(horizontal="center")
+            else:
+                cell.alignment = Alignment(horizontal="left")
+
+    for col_idx in range(1, sheet.max_column + 1):
+        column_letter = get_column_letter(col_idx)
+        max_length = 0
+        for cell in sheet[column_letter]:
+            if cell.value is None:
+                continue
+            max_length = max(max_length, len(str(cell.value)))
+        sheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
+
+    workbook.save(output_path)
 
 
 def write_raw_export(raw_export: Dict[str, object], output_prefix: Path) -> Path:
