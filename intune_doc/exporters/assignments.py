@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+import urllib.error
 from typing import Any, Dict, Iterable, List, Mapping, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def _chunked(items: Iterable[str], size: int = 15) -> Iterable[List[str]]:
@@ -50,13 +54,22 @@ def _resolve_groups(graph_client: Any, group_ids: Iterable[str]) -> Dict[str, Di
 
     for batch in _chunked(ids):
         filter_value = ",".join(f"'{group_id}'" for group_id in batch)
-        response = graph_client.get(
-            "/groups",
-            params={
-                "$select": "id,displayName,groupTypes,securityEnabled,mailEnabled",
-                "$filter": f"id in ({filter_value})",
-            },
-        )
+        try:
+            response = graph_client.get(
+                "/groups",
+                params={
+                    "$select": "id,displayName,groupTypes,securityEnabled,mailEnabled",
+                    "$filter": f"id in ({filter_value})",
+                },
+            )
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                logger.warning(
+                    "Group resolution request not found. Continuing without group details for ids: %s",
+                    batch,
+                )
+                continue
+            raise
         for group in response.get("value", []):
             resolved[group.get("id")] = group
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from dataclasses import dataclass
 import sys
 from pathlib import Path
@@ -120,6 +121,10 @@ def _resolve_organization(graph_client: GraphClient) -> str:
 
 
 def main(argv: Optional[Iterable[str]] = None) -> int:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     config = _load_config_or_exit()
     options = parse_args(
         list(sys.argv[1:]) if argv is None else argv,
